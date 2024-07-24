@@ -125,7 +125,8 @@ public class PlayerMove : MonoBehaviour
             rotX = -60.0f;
         }
         // 계산된 회전 값을 나의 트랜스폼 회전 값으로 적용한다.
-        transform.eulerAngles = new Vector3(-rotX, rotY, 0);
+        transform.eulerAngles = new Vector3(0, rotY, 0);
+        Camera.main.transform.GetComponent<FollowCamera>().rotX = rotX;
     }
 
 
