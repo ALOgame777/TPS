@@ -47,7 +47,8 @@ public class PlayerFire : MonoBehaviour
             RaycastHit hitInfo;
 
             // 2-3. 만들어진 레이를 지정된 방향과 거리만큼 발사한다.
-            bool isHit = Physics.Raycast(ray, out hitInfo, 1000); // out 키워드 
+            // 7번 레이어 빼고 전부다
+            bool isHit = Physics.Raycast(ray, out hitInfo, 1000, ~(1<<7)); // out 키워드 
             // 2-4. 만일, 레이가 충돌을 했다면 레이가 닿은 위치에 총알 이펙트를 표시한다.
             if (isHit)
             {
@@ -66,8 +67,10 @@ public class PlayerFire : MonoBehaviour
         {
             // 수류탄이 날아가는 궤적을 그린다.
             Vector3 startPos = firePosition.position;
-            Vector3 dir = transform.TransformDirection(direction);
-            dir.Normalize();
+            //Vector3 dir = transform.TransformDirection(direction);
+            //dir.Normalize();
+            Vector3 dir = Camera.main.transform.forward + Camera.main.transform.up;
+            dir.Normalize();    
             Vector3 gravity = Physics.gravity;
             int simulCount = (int)(simulationTime / interval);
             trajectory.Clear();
@@ -124,7 +127,7 @@ public class PlayerFire : MonoBehaviour
             if (rb != null)
             {
                 rb.mass = mass;
-                Vector3 dir = transform.TransformDirection(direction);
+                Vector3 dir = Camera.main.transform.forward + Camera.main.transform.up;
                 dir.Normalize();
                 // 물리적으로 발사하기
                 // 물리적 힘을 가할 떄 사용, 방향x 힘의크기, 질량(MASS)의 영향 O, 중력 가속도(GRAVITY) 영향 O, 공기 저항(DRAG) 영향 O
