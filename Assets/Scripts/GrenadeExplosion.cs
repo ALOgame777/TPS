@@ -31,7 +31,13 @@ public class GrenadeExplosion : MonoBehaviour
             // 찾은 오브젝트를 모두 파괴한다.
             for (int i = 0; i < cols.Length; i++)
             {
-                Destroy(cols[i].gameObject);
+                //Destroy(cols[i].gameObject);
+
+                Rigidbody rb = cols[i].gameObject.GetComponent<Rigidbody>();
+                if (rb != null)
+                {
+                    rb.AddExplosionForce(1000, transform.position, radius, 300);
+                }
             }
         }
         Destroy(gameObject);

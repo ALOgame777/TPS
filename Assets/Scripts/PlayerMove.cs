@@ -129,6 +129,10 @@ public class PlayerMove : MonoBehaviour
         Camera.main.transform.GetComponent<FollowCamera>().rotX = rotX;
     }
 
+    //private void OnControllerColliderHit(ControllerColliderHit hit)
+    //{
+        
+    //}
 
-    
+
 }
