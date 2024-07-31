@@ -2,16 +2,17 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 using UnityEngine.Rendering;
 
-public class PlayerMove : MonoBehaviour
+public class PlayerMove : ActorBase
 {
-
-    public float moveSpeed = 7.0f;
+    public PlayerStateBase mysuatus;
     public float rotSpeed = 200.0f;
     public float yVelocity = 2.0f;
     public float jumpPower = 4.0f;
     public int maxjumpcount = 1;
+    public Image img_hitUI;
     
 
     // 회전 값을 미리 계산하기 위한 회전축(x, y) 변수
@@ -19,6 +20,8 @@ public class PlayerMove : MonoBehaviour
     float rotY;
     float yPos;
     int currentJumpCount = 0;
+    //float currentTime = 0.5f;
+    //bool timerStart = false;
 
     CharacterController cc;
 
@@ -45,6 +48,16 @@ public class PlayerMove : MonoBehaviour
     {
         Move();
         Rotate();
+        // 히트 ui 타이머
+        //if (timerStart)
+        //{
+        //    currentTime -= Time.deltaTime;
+        //    if (currentTime < 0)
+        //    {
+        //        timerStart = false;
+        //        img_hitUI.gameObject.SetActive(false);
+        //    }
+        //}
 
 
     }
@@ -95,7 +108,7 @@ public class PlayerMove : MonoBehaviour
         dir.y = yPos;
 
         //transform.position += dir * moveSpeed * Time.deltaTime;
-        cc.Move(dir * moveSpeed * Time.deltaTime);
+        cc.Move(dir * mysuatus.speed * Time.deltaTime);
         //cc.SimpleMove(dir * moveSpeed);
     }
     #region  마우스 이동으로 회전값을 변경
@@ -129,10 +142,40 @@ public class PlayerMove : MonoBehaviour
         Camera.main.transform.GetComponent<FollowCamera>().rotX = rotX;
     }
 
+    // 데미지 받았을 때에 실행할 함수
+    public override void TakeDamage(float atkPower, Vector3 hitDir, Transform attacker)
+    {
+        base.TakeDamage(atkPower, hitDir, attacker);
+
+        mysuatus.currentHP = Mathf.Clamp(mysuatus.currentHP - atkPower, 0 , mysuatus.maxHp);
+        //print("내 체력 : " + mysuatus.currentHP);
+        // img_hitUI 오브젝트를 활성화했다가 0.5초 뒤에 다시 비활성화한다.;
+        StartCoroutine(TakeHit(0.5f));
+
+    }
+
     //private void OnControllerColliderHit(ControllerColliderHit hit)
     //{
-        
+
     //}
-
-
+    
+    
+    // 코루틴 함수
+    IEnumerator TakeHit(float delayTime)
+    {
+        //float addValue = 0.05f;
+        for (int i = 0; i < 100; i++)
+        {
+            Color colorVector = img_hitUI.color;
+            float addValue = 0.05f;
+            if (i > 49)
+            {
+                addValue *= -1;
+            }
+            colorVector.a += addValue;
+            img_hitUI.color = colorVector;
+            //yield return new WaitForSeconds(delayTime);
+            yield return null;
+        }
+    }
 }
