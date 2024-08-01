@@ -19,7 +19,7 @@ public class PlayerFire : MonoBehaviour
     public float mass = 5;
     public float grenadeRange = 5.0f;
     public GameObject targetTexture;
-
+    public Animator myAnim;
 
     public float attackPower = 20;
     
@@ -49,6 +49,7 @@ public class PlayerFire : MonoBehaviour
 
         if (Input.GetMouseButtonDown(0))
         {
+            myAnim.SetTrigger("Fire");
             // 2. 방향, 레이 생성, 체크 거리   
             // 2-1. 레이를 만든다.
             Ray ray = new Ray(Camera.main.transform.position, Camera.main.transform.forward); //나의 위치에서 정면방향으로 레이를 만듬

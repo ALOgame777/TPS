@@ -1,4 +1,4 @@
-using System;
+
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -7,24 +7,31 @@ using UnityEngine.Rendering;
 
 public class PlayerMove : ActorBase
 {
+    enum PlayerMoveState
+    {
+        Normal,
+        Jump
+    }
+
     public PlayerStateBase mysuatus;
     public float rotSpeed = 200.0f;
     public float yVelocity = 2.0f;
     public float jumpPower = 4.0f;
     public int maxjumpcount = 1;
     public Image img_hitUI;
-    
+    public Animator playerAnim;
 
     // 회전 값을 미리 계산하기 위한 회전축(x, y) 변수
     float rotX;
     float rotY;
     float yPos;
     int currentJumpCount = 0;
-    //float currentTime = 0.5f;
-    //bool timerStart = false;
+    float[] idleAnims = new float[] { 0.0f, 0.3f, 0.6f, 1.0f};
+    float currentTime = 0f;
 
     CharacterController cc;
 
+    PlayerMoveState myMovestate = PlayerMoveState.Normal;
     // 중력을 적용하고 싶다.
     // 바닥에 충돌이 있을 때까지는 아래로 계속 내려가게 하고 싶다.
     // 방향 : 아래, 크기 : 중력
@@ -40,8 +47,21 @@ public class PlayerMove : ActorBase
 
         // 중력 값을 초기화한다.
         gravityPower = Physics.gravity;
-       
+
+        // 2초에 한 번씩 idle 애니메이션을 변경하는 코루틴 함수를 실행한다.
+        StartCoroutine(SelectIdleMotion(2.0f));
         
+    }
+    IEnumerator SelectIdleMotion(float changeTime)
+    {
+        while (true)
+        {
+            // 지정된 시간 마다 0 ~ 3 사이의 랜덤한 값을 뽑는다.
+            int num = Random.Range(0, 4);
+            // idleAnims 배열의 뽑은 인덱스의 해당하는 값을 애니메이터의 SelectedIdle 변수의 값으로 넣어준다.
+            playerAnim.SetFloat("SelectedIdle", idleAnims[num]);
+            yield return new WaitForSeconds(changeTime);
+        }
     }
 
     void Update()
@@ -69,40 +89,76 @@ public class PlayerMove : ActorBase
     #endregion
     void Move()
     {
-        // 1. 수평 이동
-        float h = Input.GetAxis("Horizontal");
-        float v = Input.GetAxis("Vertical");
+        float h = 0;
+        float v = 0;
+        if (myMovestate == PlayerMoveState.Normal)
+        {
 
+            // 1. 수평 이동 계산
+            h = Input.GetAxis("Horizontal");
+            v = Input.GetAxis("Vertical");
 
+            playerAnim.SetFloat("MoveHorizontal", h);
+            playerAnim.SetFloat("MoveVertical", v);
+        }
         // 나의 정면 방향에 따라서 이동하도록 변경한다.
         // 1-1. 로컬 방향 벡터를 이용해서 계산하는 방법
         // 나를 기준으로 한 forward 방향 , 나를 기준으로 한 right방향
         //Vector3 dir = transform.forward * v + transform.right * h;
         //dir.Normalize();
 
-        // 1-2. 나의 회전 값에 따라서 월드 방향 벡터를 로컬 방향의 벡터로 변환하는 함수를 이용하는 방법
-        Vector3 dir = new Vector3(h, 0, v); // 월드 방향 벡터
-        dir = transform.TransformDirection(dir); // 로컬 방향 -> 월드방향
-        //transform.TransformPoint(dir); // 로컬 위치를 월드 위치로 환산
-        dir.Normalize();
-
+         // 1-2. 나의 회전 값에 따라서 월드 방향 벡터를 로컬 방향의 벡터로 변환하는 함수를 이용하는 방법
+         Vector3 dir = new Vector3(h, 0, v); // 월드 방향 벡터
+         playerAnim.SetFloat("DirLength", dir.magnitude);
+         dir = transform.TransformDirection(dir); // 로컬 방향 -> 월드방향
+         //transform.TransformPoint(dir); // 로컬 위치를 월드 위치로 환산
+         dir.Normalize();
+        
         // 2. 수직 이동 계산(중력)
 
         // 중력 적용
         yPos += gravityPower.y * yVelocity * Time.deltaTime;
 
-        // 바닥에 닿아있을 때에는 yPos의 값을 0으로 초기화한다.
-        if(cc.collisionFlags == CollisionFlags.CollidedBelow)
+        Ray ray = new Ray(transform.position, transform.up * -1);
+        RaycastHit hitinfo;
+        bool isHit = Physics.Raycast(ray, out hitinfo, (cc.height + cc.skinWidth + 0.4f) * 0.5f, ~(1 << 7));
+        // 점프를 하지 않았는데 충돌이 없는 경우
+        if (myMovestate != PlayerMoveState.Jump && !isHit)
         {
+            // 낙하 애니메이션 신호를 준다.
+            playerAnim.SetTrigger("IsFalling");
+        }
+        // 바닥에 닿아있을 때에는 yPos의 값을 0으로 초기화한다.
+        //if(cc.collisionFlags == CollisionFlags.CollidedBelow)
+        if(isHit)
+        {
+            // 점프 했다가 땅에 착지했을 때 1.25초 뒤에 이동할 수 있는 상태로 전환한다.
+            if (myMovestate == PlayerMoveState.Jump)
+            {
+                playerAnim.SetBool("Jump", false);
+                currentTime += Time.deltaTime;
+                if(currentTime > 0.5f)
+                {
+                    currentTime = 0;
+                    myMovestate = PlayerMoveState.Normal;
+                }
+            }
             yPos = 0;
             currentJumpCount = 0;
+            
         }
 
         // 키보드의 스페이스바를 누르면 위쪽으로 점프를 하게 하고 싶다.
         if (Input.GetButtonDown("Jump") && currentJumpCount < maxjumpcount)
         {
+            // 땅에서 처음 점프할 때 점프 상태로 전환한다.
+            if(myMovestate == PlayerMoveState.Normal)
+            {
+                myMovestate = PlayerMoveState.Jump;
+            }
             yPos = jumpPower;
             currentJumpCount++;
+            playerAnim.SetBool("Jump", true);  
         }
 
         dir.y = yPos;
