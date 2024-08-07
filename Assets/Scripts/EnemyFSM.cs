@@ -5,6 +5,7 @@ using Unity.VisualScripting;
 using UnityEngine;
 using Random = UnityEngine.Random;
 using UnityEngine.UI;
+using UnityEngine.AI;
 
 
 
@@ -46,7 +47,7 @@ public class EnemyFSM : ActorBase
     Vector3 hitDirection;
     float[] idleBlendValue = new float[] { 0, 0.5f, 1.0f };
     int idleNumber = 0;
-  
+    NavMeshAgent smith;
 
     [SerializeField] Transform target;
 
@@ -58,6 +59,17 @@ public class EnemyFSM : ActorBase
         myStatus.Initialize(100, 9);
         myStatus.patrolSpeed = 5;
         hpSlider.value = myStatus.currentHP / myStatus.maxHp;
+        smith = GetComponent<NavMeshAgent>();
+        if(smith != null)
+        {
+            smith.speed = myStatus.patrolSpeed;
+            smith.angularSpeed = 300f;
+            smith.acceleration = 35.0f;
+            smith.autoBraking = true;
+            smith.autoTraverseOffMeshLink = false;
+            smith.stoppingDistance = 1.0f;
+
+        }
     }
 
     void Update()
@@ -95,6 +107,55 @@ public class EnemyFSM : ActorBase
 
         }
     }
+    //Vector3 BezierCurve(Vector3 p0, Vector3 p1, Vector3 p2, float percent)
+    //{
+    //    Vector3 mid1 = Vector3.Lerp(p0, p1, percent);
+    //    Vector3 mid2 = Vector3.Lerp(p1, p2, percent);
+    //    Vector3 center = Vector3.Lerp(mid1, mid2, percent);
+    //    return center;
+    //}
+
+    //private void ParabolaType2(float height)
+    //{
+    //    OffMeshLinkData linkData = smith.currentOffMeshLinkData;
+    //    Vector3 start = linkData.startPos + Vector3.up;
+    //    Vector3 end = linkData.endPos + Vector3.up;
+    //    Vector3 middle = (start + end) / 2;
+    //    middle.y = height;
+
+    //    if(currentTime < 1.0f)
+    //    {
+    //        currentTime += Time.deltaTime;
+    //        transform.position = BezierCurve(start, middle, end, currentTime);
+    //    }
+    //    else
+    //    {
+    //        currentTime = 0;
+    //        smith.CompleteOffMeshLink();
+    //        smith.ResetPath();
+
+    //    }
+    //}
+
+    //// 곡선 이동 방법 
+    //void ParabolaType3()
+    //{
+    //    OffMeshLinkData linkData = smith.currentOffMeshLinkData;
+    //    Vector3 start = linkData.startPos + Vector3.up;
+    //    Vector3 end = linkData.endPos + Vector3.up;
+    //    if (currentTime < 1.0f)
+    //    {
+    //        currentTime += Time.deltaTime;
+    //        Vector3 result = Vector3.Lerp(start, end, currentTime);
+    //        result.y += heightCurve.Evaluate(currentTime);
+    //        transform.position = result;
+    //    }
+    //    else
+    //    {
+    //        currentTime = 0;
+    //        smith.CompleteOffMeshLink();
+    //    }
+    //}
 
     private void Idle()
     {
@@ -111,6 +172,9 @@ public class EnemyFSM : ActorBase
             idleNumber = (idleNumber + 1) % 3;
             float selectedIdle = idleBlendValue[idleNumber];
             enemyAnim.SetFloat("SeletedIdle", selectedIdle);
+
+            // 네비메시 에이전트의 목적지로  PatrolNext 지점을 설정한다.
+            smith.SetDestination(patrolNext);
             
         }
     }
@@ -120,13 +184,14 @@ public class EnemyFSM : ActorBase
         CheckSight(initPreferences.sightRange, initPreferences.sightDistance);
         // 선택된 지점으로 이동한다
         Vector3 dir = patrolNext - transform.position;
-        dir.y = 0;
-        if (dir.magnitude > 0.1f)
+        //dir.y = 0;
+        if (dir.magnitude > 1.0f)
         {
-            cc.Move(dir.normalized * myStatus.patrolSpeed * Time.deltaTime);
+
+            //cc.Move(dir.normalized * myStatus.patrolSpeed * Time.deltaTime);
             // 이동하려는 방향으로 바라본다.
             
-            transform.rotation = Quaternion.LookRotation(dir.normalized);
+            //transform.rotation = Quaternion.LookRotation(dir.normalized);
         }
         // 목적지에 도달하고, 2초 ~ 3초 사이만큼 대기한 다음 다른 지점을 추첨한다.
         else
@@ -156,6 +221,10 @@ public class EnemyFSM : ActorBase
             print("my State : Patrol -> Idle");
             idleTime = Random.Range(2.0f, 3.0f);
             enemyAnim.SetBool("PatrolStart", false);
+
+            // 강제로 네비메시 에이전트를 멈춘다.
+            smith.isStopped = true;
+            smith.ResetPath();
         }
     }
 
@@ -210,6 +279,8 @@ public class EnemyFSM : ActorBase
             myState = Enemystate.Return;
             print("my State : Trace -> Return");
             enemyAnim.SetBool("Returning", true);
+            smith.speed = myStatus.speed;
+            smith.SetDestination(patrolCenter);
             return;
         }
         // 삼항 연산자
@@ -219,8 +290,10 @@ public class EnemyFSM : ActorBase
         if (dir.magnitude > selectedRange)
         {
             // 타겟을 향해 이동한다.
-            cc.Move(dir.normalized * myStatus.speed * Time.deltaTime);
-            transform.rotation = Quaternion.LookRotation(dir.normalized);
+            //cc.Move(dir.normalized * myStatus.speed * Time.deltaTime);
+            //transform.rotation = Quaternion.LookRotation(dir.normalized);
+            smith.SetDestination(target.position);
+            smith.speed = myStatus.speed;
         }
         else
         {
@@ -238,6 +311,9 @@ public class EnemyFSM : ActorBase
                 print("my State : Trace -> MeleeAttack");
                 enemyAnim.SetTrigger("Attack");
             }
+
+            smith.isStopped = true;
+            smith.ResetPath();
 
         }
     }
@@ -319,20 +395,25 @@ public class EnemyFSM : ActorBase
         Vector3 dir = patrolCenter - transform.position;
         dir.y = 0;
         // 목적지에 근접했다면...
-        if (dir.magnitude < 0.1f)
+        if (dir.magnitude < 1.1f)
         {
+            // 네비게이션을 정지한다.
+            smith.isStopped = true;
+            smith.ResetPath();
+
             transform.position = patrolCenter;
             // 상태를 idle 상태로 전환한다.
             myState = Enemystate.Idle;
             print("my State : Return -> Idle");
             enemyAnim.SetBool("Returning", false);
+            smith.speed = myStatus.patrolSpeed;
         }
         // 그렇지 않았다면
-        else
-        {
-            cc.Move(dir.normalized * myStatus.speed* Time.deltaTime);
-            transform.rotation = Quaternion.LookRotation(dir.normalized);
-        }
+        //else
+        //{
+        //    cc.Move(dir.normalized * myStatus.speed* Time.deltaTime);
+        //    transform.rotation = Quaternion.LookRotation(dir.normalized);
+        //}
 
     }
 
@@ -348,6 +429,7 @@ public class EnemyFSM : ActorBase
             print("my State : Damaged -> Trace");
             //enemyAnim.SetTrigger("Trace");
             enemyAnim.SetBool("Hit", false);
+            smith.speed = myStatus.speed;
         }
     }
 
@@ -391,6 +473,8 @@ public class EnemyFSM : ActorBase
             //3-2. 타격 방향으로 일정 거리만큼을 넉백 위치로 지정한다.
             hitDir.y = 0;
             hitDirection = transform.position + hitDir * 2.5f;
+            smith.isStopped = true;
+            smith.ResetPath();
             //3-3. 공격자를 타겟으로 설정한다.
             target = attacker;
         }
