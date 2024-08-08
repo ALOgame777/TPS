@@ -3,6 +3,14 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+public enum WeaponType
+{
+    None,
+    Pistol,
+    SniperGun
+}
+
+
 public class PlayerFire : MonoBehaviour
 {
     public GameObject bulletFXObject;
@@ -10,7 +18,7 @@ public class PlayerFire : MonoBehaviour
     public Vector3 direction;
     public float throwPower = 5;
     public Transform firePosition;
-
+    public WeaponType myWeaponType = WeaponType.SniperGun;
 
     
     //수류탄 궤적 그리기용 변수
@@ -26,6 +34,8 @@ public class PlayerFire : MonoBehaviour
     List<Vector3> trajectory = new List<Vector3>();
     ParticleSystem bulletEffect;
     LineRenderer line;
+    FollowCamera followCam;
+
     void Start()
     {
         // 커서를 게임 뷰 안에 가둔다.
@@ -35,13 +45,28 @@ public class PlayerFire : MonoBehaviour
 
         targetTexture.transform.localScale = new Vector3(grenadeRange, grenadeRange, 1);
         targetTexture.SetActive(false);
+        followCam = Camera.main.GetComponent<FollowCamera>();
     }
 
     void Update()
     {
         FireType1();
-        FireType2();
+        switch(myWeaponType)
+        {
+            case WeaponType.None:
+                break;
+            case WeaponType.Pistol:
+                FireType2();
+                break;
+            case WeaponType.SniperGun:
+                FireType3();
+                break;
+                
+        }
+        
     }
+
+
     void FireType1()
     {
         // 만일, 마우스 왼쪽 버튼을 눌렀다면, 나의 정면 방향으로 총알을 발사하고 싶다.
@@ -170,6 +195,29 @@ public class PlayerFire : MonoBehaviour
 
             targetTexture.SetActive(false);
         }
+    }
+
+
+    void FireType3()
+    {
+        // 마우스 우측 버튼을 누르면...
+        if (Input.GetMouseButtonDown(1))
+        {
+            // 카메라가 줌인(확대) 된다.
+            // 스나이퍼 UI를 표시한다.
+            followCam.ZoomIn(true);
+
+
+        }
+        // 마우스 우측 버튼을 떼면...
+        else if(Input.GetMouseButtonUp(1))
+        {
+            // 카메라의 배율을 다시 원래대로 돌려놓는다.
+            // 스나이퍼 UI를 투명하게 한다.
+            followCam.ZoomIn(false);
+
+        }
+
     }
 
     //Scene View에 기즈모를 그리는 이벤트 함수

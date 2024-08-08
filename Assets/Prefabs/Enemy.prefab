@@ -445,6 +445,7 @@ MonoBehaviour:
   initPreferences:
     PatrolRadius: 4
     attackRange: 2
+    farAttackRange: 0
     sightRange: 30
     sightDistance: 15
     maxTraceDistance: 25
@@ -453,6 +454,9 @@ MonoBehaviour:
     speed: 9
     currentHP: 100
     patrolSpeed: 5
+  hpSlider: {fileID: 0}
+  enemyAnim: {fileID: 0}
+  attackType: 0
   target: {fileID: 0}
 --- !u!136 &767461445856153769
 CapsuleCollider:

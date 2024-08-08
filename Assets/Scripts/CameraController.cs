@@ -6,6 +6,7 @@ using UnityEngine;
 public class CameraController : MonoBehaviour
 {
     public Vector3 cameraOffset = new Vector3(0.3f, 0.3f, -4.0f);
+    public float currentRate = 1;
 
     // 배열(Array)
     //Transform[] camPositions = new Transform[2];
@@ -13,7 +14,6 @@ public class CameraController : MonoBehaviour
     // 리스트(List)
     List<Transform> camList = new List<Transform>();
 
-    float currentRate = 1;
     float my = 0;
 
     void Start()
