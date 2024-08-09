@@ -5,10 +5,11 @@ using UnityEngine.UI;
 
 public class PlayerMove : ActorBase
 {
-    enum PlayerMoveState
+    public enum PlayerMoveState
     {
         Normal,
         Jump,
+        Cinematic,
     }
 
     public PlayerStateBase myStatus;
@@ -28,12 +29,14 @@ public class PlayerMove : ActorBase
     float[] idleAnims = new float[4] { 0.0f, 0.3f, 0.6f, 1.0f };
 
     CharacterController cc;
-    PlayerMoveState myMoveState = PlayerMoveState.Normal;
+
+    public PlayerMoveState myMoveState = PlayerMoveState.Normal;
 
     Vector3 gravityPower;
 
     void Start()
     {
+        
         rotX = transform.eulerAngles.x;
         rotY = transform.eulerAngles.y;
 
@@ -127,8 +130,11 @@ public class PlayerMove : ActorBase
 
     void Rotate()
     {
-        float mouseX = Input.GetAxis("Mouse X");
-
+        float mouseX = 0;
+        if (myMoveState != PlayerMoveState.Cinematic)
+        {
+            mouseX = Input.GetAxis("Mouse X");
+        }
         rotY += mouseX * rotSpeed * Time.deltaTime;
 
         transform.eulerAngles = new Vector3(0, rotY, 0);
@@ -140,9 +146,18 @@ public class PlayerMove : ActorBase
 
         myStatus.currentHP = Mathf.Clamp(myStatus.currentHP - atkPower, 0, myStatus.maxHp);
 
-        Camera.main.GetComponent<ShakeObject>().ShakeRot();
+        if (myStatus.currentHP > 0)
+        {
+            Camera.main.GetComponent<ShakeObject>().ShakeRot();
 
-        StartCoroutine(DeActivateHitUI(0.5f));
+            StartCoroutine(DeActivateHitUI(0.5f));
+        }
+        else
+        {
+            // 화면 흑백 효과를 포스트로 켜준다.
+            PostProCessingManager.Instance.GreyScaleOn();
+            cc.enabled = false;
+        }
     }
 
     IEnumerator DeActivateHitUI(float delayTime)

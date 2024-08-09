@@ -1,6 +1,6 @@
 fileFormatVersion: 2
-guid: 2d858aecb97a20641a8c8cea52f2ac40
-timeCreated: 1486799199
+guid: 92173177b83f4ae4194c757b33b5d46b
+timeCreated: 1486897663
 licenseType: Store
 ModelImporter:
   serializedVersion: 19
@@ -9,7 +9,7 @@ ModelImporter:
     400000: //RootNode
     2300000: //RootNode
     3300000: //RootNode
-    4300000: window_big_with_side_offset
+    4300000: window_big_with_side_offset_LOD0
   materials:
     importMaterials: 1
     materialName: 0

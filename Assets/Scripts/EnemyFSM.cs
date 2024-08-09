@@ -27,7 +27,8 @@ public class EnemyFSM : ActorBase
         AttackDelay = 16,
         Return = 32,
         Damaged = 64,
-        Dead = 128
+        Dead = 128,
+        Cinematic,
     }
 
     public Enemystate myState = Enemystate.Idle;
@@ -53,6 +54,7 @@ public class EnemyFSM : ActorBase
 
     void Start()
     {
+        myState = Enemystate.Cinematic;
         patrolCenter = transform.position;
         patrolNext = patrolCenter;
         cc = GetComponent<CharacterController>();
@@ -103,6 +105,9 @@ public class EnemyFSM : ActorBase
                 break;
             case Enemystate.Dead:
                 Dead();
+                break;
+            case Enemystate.Cinematic:
+
                 break;
 
         }
