@@ -10,6 +10,7 @@ public class PlayerMove : ActorBase
         Normal,
         Jump,
         Cinematic,
+        Die
     }
 
     public PlayerStateBase myStatus;
@@ -142,6 +143,10 @@ public class PlayerMove : ActorBase
 
     public override void TakeDamage(float atkPower, Vector3 hitDir, Transform attacker)
     {
+        if (myMoveState == PlayerMoveState.Die)
+        {
+            return;
+        }
         base.TakeDamage(atkPower, hitDir, attacker);
 
         myStatus.currentHP = Mathf.Clamp(myStatus.currentHP - atkPower, 0, myStatus.maxHp);
@@ -154,9 +159,12 @@ public class PlayerMove : ActorBase
         }
         else
         {
+            myMoveState = PlayerMoveState.Die;
             // 화면 흑백 효과를 포스트로 켜준다.
             PostProCessingManager.Instance.GreyScaleOn();
             cc.enabled = false;
+
+            playerAnim.SetTrigger("Death");
         }
     }
 

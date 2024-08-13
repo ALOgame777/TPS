@@ -72,3 +72,4 @@ crashlytics-build.properties
 /[Aa]ssets/[Ss]treamingAssets/aa/*
 # 모델링 아웃
 /Assets/Modelings/FreeTestCharacterAsuna/*
+/Assets/Video/*

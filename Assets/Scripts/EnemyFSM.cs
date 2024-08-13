@@ -304,6 +304,11 @@ public class EnemyFSM : ActorBase
         {
             // 공격 범위 이내로 들어가면 상태를 Attak 상태로 전환한다.
             currentTime = 0;
+
+            // 타겟을 향해 회전한다.
+            Vector3 lookDir = target.position - transform.position;
+            lookDir.Normalize();
+            transform.rotation = Quaternion.LookRotation(lookDir);
             if (dir.magnitude > initPreferences.attackRange)
             {
                 myState = Enemystate.FarAttack;
@@ -323,6 +328,16 @@ public class EnemyFSM : ActorBase
         }
     }
 
+    public void ThrowAttack()
+    {
+        Ray ray = new Ray(transform.position, transform.forward);
+        RaycastHit hitInfo;
+        if (Physics.Raycast(ray, out hitInfo, 15, 1<<LayerMask.NameToLayer("Player")))
+        {
+            PlayerMove pm =  hitInfo.transform.GetComponent<PlayerMove>();
+            pm.TakeDamage(15, Vector3.zero, transform);
+        }
+    }
 
     public void Attack()
     {
@@ -482,10 +497,10 @@ public class EnemyFSM : ActorBase
             // 만일, 계산된 hitDirection 사이에 장애물이 있다면...
             Ray ray = new Ray(transform.position, hitDir);
             RaycastHit hitinfo;
-            if(Physics.Raycast(ray, out hitinfo, 2.5f))
+            if (Physics.BoxCast(transform.position, new Vector3(0.5f, 1.0f, 0.5f), hitDir, out hitinfo,  transform.rotation, 2.5f))
             {
                 // hitDirection 의 위치를 레이에 부딪힌 위치로부터 자신의 반지름 만큼 앞쪽으로 설정한다.
-                hitDirection = hitinfo.point + hitDir * -1.1f * GetComponent<CapsuleCollider>().radius; 
+                hitDirection = hitinfo.point + hitDir * -1f * GetComponent<CapsuleCollider>().radius; 
             }
             smith.isStopped = true;
             smith.ResetPath();

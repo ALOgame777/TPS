@@ -109,7 +109,7 @@ public class PlayerFire : MonoBehaviour
                 if (enemy != null)
                 {
                     //EnemyFSM의 TakeDamage 함수를 실행한다.
-                    enemy.TakeDamage(myWeaponInfo.damagePower, ray.direction, transform);
+                    enemy.TakeDamage(myWeaponInfo.damagePower, ray.direction, transform);   
                 }
                 // 그렇지 않다면...
                 else
