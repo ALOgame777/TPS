@@ -44,7 +44,7 @@ public class PlayerMove : ActorBase
 
         gravityPower = Physics.gravity;
 
-        StartCoroutine(SelectIdleMotion(2.0f));
+        //StartCoroutine(SelectIdleMotion(2.0f));
     }
 
     IEnumerator SelectIdleMotion(float changeTime)

@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public enum WeaponType
 {
@@ -18,7 +19,9 @@ public class PlayerFire : MonoBehaviour
     public Vector3 direction;
     public float throwPower = 5;
     public Transform firePosition;
-    public WeaponType myWeaponType = WeaponType.SniperGun;
+    public WeaponInfo myWeaponInfo;
+    public GameObject[] weaponSockets = new GameObject[2];
+    public GameObject[] weponUI = new GameObject[3];
 
     
     //수류탄 궤적 그리기용 변수
@@ -29,7 +32,6 @@ public class PlayerFire : MonoBehaviour
     public GameObject targetTexture;
     public Animator myAnim;
 
-    public float attackPower = 20;
     
     List<Vector3> trajectory = new List<Vector3>();
     ParticleSystem bulletEffect;
@@ -50,15 +52,18 @@ public class PlayerFire : MonoBehaviour
 
     void Update()
     {
-        FireType1();
-        switch(myWeaponType)
+       
+        switch(myWeaponInfo.type)
         {
             case WeaponType.None:
+
                 break;
             case WeaponType.Pistol:
+                FireType1();
                 FireType2();
                 break;
             case WeaponType.SniperGun:
+                FireType1();
                 FireType3();
                 break;
                 
@@ -74,6 +79,15 @@ public class PlayerFire : MonoBehaviour
 
         if (Input.GetMouseButtonDown(0))
         {
+            if(myWeaponInfo.type == WeaponType.Pistol)
+            {
+                myAnim.SetTrigger("FirePistol");
+            }
+            else if(myWeaponInfo.type== WeaponType.SniperGun)
+            {
+                myAnim.SetTrigger("FireRifle");
+            }
+        
             myAnim.SetTrigger("Fire");
             // 2. 방향, 레이 생성, 체크 거리   
             // 2-1. 레이를 만든다.
@@ -83,7 +97,7 @@ public class PlayerFire : MonoBehaviour
 
             // 2-3. 만들어진 레이를 지정된 방향과 거리만큼 발사한다.
             // 7번 레이어 빼고 전부다
-            bool isHit = Physics.Raycast(ray, out hitInfo, 1000, ~(1<<7)); // out 키워드 
+            bool isHit = Physics.Raycast(ray, out hitInfo, myWeaponInfo.range, ~(1<<7)); // out 키워드 
             // 2-4. 만일, 레이가 충돌을 했다면 레이가 닿은 위치에 총알 이펙트를 표시한다.
             if (isHit)
             {
@@ -95,7 +109,7 @@ public class PlayerFire : MonoBehaviour
                 if (enemy != null)
                 {
                     //EnemyFSM의 TakeDamage 함수를 실행한다.
-                    enemy.TakeDamage(attackPower, ray.direction, transform);
+                    enemy.TakeDamage(myWeaponInfo.damagePower, ray.direction, transform);
                 }
                 // 그렇지 않다면...
                 else
@@ -180,6 +194,9 @@ public class PlayerFire : MonoBehaviour
         {
             // 수류탄 프리팹을 생성하고, 물리적으로 발사한다.
             GameObject bomb = Instantiate(grenadePrefab, firePosition.position, firePosition.rotation);
+
+            // 수류탄의 주인으로 자신을 등록한다.
+            bomb.GetComponent<GrenadeExplosion>().master = transform;
             Rigidbody rb = bomb.GetComponent<Rigidbody>();
             if (rb != null)
             {
@@ -193,7 +210,10 @@ public class PlayerFire : MonoBehaviour
                 rb.AddForce(dir * throwPower, ForceMode.Impulse);
             }
 
+            
             targetTexture.SetActive(false);
+            // 라인 렌더러의 배열 길이를 0으로 초기화한다. 
+            line.positionCount = 0;
         }
     }
 
@@ -219,6 +239,46 @@ public class PlayerFire : MonoBehaviour
         }
 
     }
+
+    // 무기 소켓 및 애니메이션 변경 함수
+    public void ChangeWeapon(WeaponInfo weaponInfo)
+    {
+        // 웨폰 정보를 변경한다.
+        myWeaponInfo = weaponInfo;
+
+        // 모든 무기 모델링과 UI를 비활성화한다.
+        for (int i = 0; i < weaponSockets.Length; i++)
+        {
+            weaponSockets[i].SetActive(false);
+
+        }
+        for (int i = 0; i < weponUI.Length; i++)
+        {
+            weponUI[i].SetActive(false);
+        }
+        weponUI[0].SetActive(true);
+        weponUI[0].GetComponent<Text>().text = $"Ammo : <color=#ffff00><size=60>{weaponInfo.bulletCount}</size></color>";
+
+
+        // WeaponType에 맞는 무기 모델링만 활성화한다.
+        if (weaponInfo.type == WeaponType.Pistol)
+        {
+            weaponSockets[0].SetActive(true);
+            weponUI[1].SetActive(true);
+        }
+        else if (weaponInfo.type == WeaponType.SniperGun)
+        {
+            weaponSockets[1].SetActive(true);
+            weponUI[2].SetActive(true);
+
+        }
+
+        // 애니메이터의 SelectedIdle 파라미터의 값을 무기 타입에 있는 값으로 변경한다.
+        int typeNumber = (int)weaponInfo.type;
+        myAnim.SetFloat("SelectedIdle", (float)typeNumber);
+    }
+
+
 
     //Scene View에 기즈모를 그리는 이벤트 함수
     private void OnDrawGizmos()

@@ -11,7 +11,8 @@ public class GrenadeExplosion : MonoBehaviour
     [Header("폭발 반경")]
     [Range(0.0f, 10.0f)]
     public float radius = 5.0f;
-
+    public float damagePower = 50.0f;
+    public Transform master;
     
     Rigidbody rb;
     void Start()
@@ -37,6 +38,15 @@ public class GrenadeExplosion : MonoBehaviour
                 if (rb != null)
                 {
                     rb.AddExplosionForce(1000, transform.position, radius, 300);
+                }
+                // 만일, 찾은 오브젝트에 enemyFsm 컴포넌트가 있다면...
+                EnemyFSM enemy = cols[i].transform.GetComponent<EnemyFSM>();
+                if (enemy != null)
+                {
+                    // enemyFsm 컴포넌트에 있는 takeDamage 함수를 실행한다.
+                    Vector3 hitDir = cols[i].transform.position - transform.position;
+                    hitDir.Normalize();
+                    enemy.TakeDamage(damagePower, hitDir, master);
                 }
             }
         }
